@@ -66,7 +66,7 @@ def calc_and_save_acorr(path_to_vector_csv_files: Iterable[str],
         }).to_csv(os.path.join(out_dir, out_name), index=False)
 
 
-def fit_and_save_acorr_func(path_to_acorr_files: str,
+def fit_and_save_acorr_func(path_to_acorr_csv_dir: str,
                             bounds: list[tuple[float, float]],
                             p0: Optional[list[float]] = None,
                             lag_spacing: str = "log",
@@ -81,7 +81,7 @@ def fit_and_save_acorr_func(path_to_acorr_files: str,
     a new CSV file.
 
     Args:
-        path_to_acorr_files (str): Path to the directory containing autocorrelation CSV files.
+        path_to_acorr_csv_dir (str): Path to the directory containing autocorrelation CSV files.
         bounds (List[Tuple[float, float]]): List of tuples specifying the bounds for the fitting parameters.
         p0 (Optional[List[float]]): Initial guesses for the fitting parameters. Defaults to None.
         lag_spacing (str): Spacing type for lag points. Options: "log" (logarithmic) or "linear". Defaults to "log".
@@ -93,12 +93,12 @@ def fit_and_save_acorr_func(path_to_acorr_files: str,
         None: The function saves the results to CSV files in the specified output directory.
     """
     # Find all CSV files in the specified directory
-    path_to_acocr_csv_files = sorted(glob(os.path.join(path_to_acorr_dir, "*.csv")))
+    path_to_acocr_csv_files = sorted(glob(os.path.join(path_to_acorr_csv_dir, "*.csv")))
 
     # Iterate over bounds and fit autocorrelation functions
     for bound in bounds:
         tau_table = pd.DataFrame()
-        for acorr_corr_file in tqdm(path_to_ccr_csv_files, desc=output_directory):
+        for acorr_corr_file in tqdm(path_to_acocr_csv_files, desc=output_directory):
             df = pd.read_csv(acorr_corr_file)
 
             # Apply time limit if specified
