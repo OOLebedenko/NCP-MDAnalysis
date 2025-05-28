@@ -93,13 +93,7 @@ def fit_and_save_acorr_func(path_to_acorr_files: str,
         None: The function saves the results to CSV files in the specified output directory.
     """
     # Find all CSV files in the specified directory
-    path_to_ccr_csv_files = sorted(glob(os.path.join(path_to_acorr_files, "*.csv")))
-    rname_list = []
-
-    # Extract residue names from filenames
-    for file in path_to_ccr_csv_files:
-        aa_name = file.split('-')[2]
-        rname_list.append(aa_name)
+    path_to_acocr_csv_files = sorted(glob(os.path.join(path_to_acorr_dir, "*.csv")))
 
     # Iterate over bounds and fit autocorrelation functions
     for bound in bounds:
@@ -122,18 +116,19 @@ def fit_and_save_acorr_func(path_to_acorr_files: str,
 
             # Fit the autocorrelation function
             popt = repeated_fit_auto_correlation(acorr, time_ns, bound, p0)
-            name = os.path.splitext(os.path.basename(acorr_corr_file))[0]
             amplitudes = popt[::2]
             taus = popt[1::2]
             order = (len(bound[0]) + 1) // 2
 
-            # Extract residue ID
+            # Extract residue info
+            name = os.path.splitext(os.path.basename(acorr_corr_file))[0]
             rid = int(name.split("-")[1])
+            rname = name.split('-')[2]
 
             # Create a dictionary for the fitted parameters
             popt_dict = {
                 'rId': rid,
-                'rName': rname_list[rid - 2],
+                'rName': rname,
                 'limit_ns': limit_ns
             }
 
