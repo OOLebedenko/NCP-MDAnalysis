@@ -46,33 +46,6 @@ if __name__ == '__main__':
     # set xray reference to calc RMSD
     xray_reference = Universe(args.path_to_xray_reference, topology_format="PDB")
 
-    #  load trajectory reference
-    trj_reference = Universe(args.path_to_trajectory_reference, topology_format="PDB")
-
-    # set path to trajectory files
-    nc_files = glob(os.path.join(args.path_to_trajectory, '*.nc'))
-    nc_files.sort()
-
-    # set trajectory transforms
-    transforms = [
-        # 1. assemble the nucleosome particle that may appear divided at the boundaries
-        # due to periodic boundary condition in the MD simulation.
-        TransformWrapper(transform=AssembleQuaternaryStructure,
-                         reference=trj_reference,
-                         cnain_ids=args.protein_chains + args.dna_chains,
-                         atom_selector="name CA N1 N9"),
-    ]
-
-    # set loader for trajectory to batch processing due to file open limits
-    batchloader = BatchLoader(reference=trj_reference,
-                              trj_list=nc_files[args.trajectory_start:args.trajectory_length],
-                              trajectory_stride=args.trajectory_stride,
-                              batch_size=args.batch_size,
-                              dt_ns=args.dt_ns,
-                              transforms=transforms,
-                              pattern="name CA N1 N9"
-                              )
-
     # set calculate RMSD using different sets of atoms:
     # (1) Cα atoms that have been used to overlay the frames
     # (2) N1 and N9 atoms from the inner turn of nDNA, nucleotides from -38 to 38
@@ -89,6 +62,33 @@ if __name__ == '__main__':
 
     dna_pattern = f"({inner_dna_pattern}) or ({outer_dna_pattern})"
     sec_str_ca_and_dna_pattern = f"({dna_pattern}) or ({sec_str_ca})"
+
+    #  load trajectory reference
+    trj_reference = Universe(args.path_to_trajectory_reference, topology_format="PDB")
+
+    # set path to trajectory files
+    nc_files = glob(os.path.join(args.path_to_trajectory, '*.nc'))
+    nc_files.sort()
+
+    # set trajectory transforms
+    transforms = [
+        # 1. assemble the nucleosome particle that may appear divided at the boundaries
+        # due to periodic boundary condition in the MD simulation.
+        TransformWrapper(transform=AssembleQuaternaryStructure,
+                         reference=trj_reference,
+                         cnain_ids=args.protein_chains + args.dna_chains,
+                         atom_selector=sec_str_ca_and_dna_pattern),
+    ]
+
+    # set loader for trajectory to batch processing due to file open limits
+    batchloader = BatchLoader(reference=trj_reference,
+                              trj_list=nc_files[args.trajectory_start:args.trajectory_length],
+                              trajectory_stride=args.trajectory_stride,
+                              batch_size=args.batch_size,
+                              dt_ns=args.dt_ns,
+                              transforms=transforms,
+                              pattern=sec_str_ca_and_dna_pattern
+                              )
 
     # set trajectory analyzer to extract coordinates of NH vectors
     analyzer = AnalyzerWrapper(RMSD,

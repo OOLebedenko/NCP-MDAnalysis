@@ -35,6 +35,11 @@ if __name__ == '__main__':
     #  load trajectory reference
     trj_reference = Universe(args.path_to_trajectory_reference, topology_format="PDB")
 
+    # set selector to assemble structure that may appear divided at the boundaries due to periodic boundary condition
+    sec_str_ca = get_sec_str_ca_pattern(trj_reference, cnain_ids=args.protein_chains)
+    dna_pattern = f"(name N1 N9)"
+    sec_str_ca_and_dna_pattern = f"({dna_pattern}) or ({sec_str_ca})"
+
     # set path to trajectory files
     nc_files = glob(os.path.join(args.path_to_trajectory, '*.nc'))
     nc_files.sort()
@@ -46,14 +51,12 @@ if __name__ == '__main__':
         TransformWrapper(transform=AssembleQuaternaryStructure,
                          reference=trj_reference,
                          cnain_ids=args.protein_chains + args.dna_chains,
-                         atom_selector="name CA N1 N9"),
+                         atom_selector=sec_str_ca_and_dna_pattern),
         # 2. overlay all MD frames by superimposing them onto the reference
         # via the secondary-structure Cα atoms from the histone core.
         TransformWrapper(transform=fit_rot_trans_by_pattern,
                          reference=trj_reference,
-                         pattern=get_sec_str_ca_pattern(reference=trj_reference,
-                                                        cnain_ids=args.protein_chains
-                                                        ))
+                         pattern=sec_str_ca)
     ]
 
     # set loader for trajectory to batch processing due to file open limits
