@@ -30,8 +30,10 @@ class BatchLoader:
         self.pattern = pattern
 
     def load(self):
-        for batch_index in tqdm(range(0, len(self.trj_list), self.batch_size)):
-            batch_u = mda.Universe(self.reference._topology, self.trj_list[batch_index:batch_index + self.batch_size],
+        for trj_split_index in tqdm(range(0, len(self.trj_list), self.batch_size)):
+            batch_index = trj_split_index // self.batch_size
+            batch_u = mda.Universe(self.reference._topology,
+                                   self.trj_list[trj_split_index:trj_split_index + self.batch_size],
                                    in_memory=True,
                                    in_memory_step=self.trajectory_stride,
                                    topology_format="PDB"
@@ -45,13 +47,11 @@ class BatchLoader:
                 batch_u.trajectory.add_transformations(*transforms)
 
             batch_ag = batch_u.select_atoms(self.pattern)
-            if self.batch_size <= batch_ag.universe.trajectory.n_frames:
-                last_index = batch_index + self.batch_size
-            else:
-                last_index = batch_index + batch_ag.universe.trajectory.n_frames
-            indexes = np.linspace(batch_index, last_index, batch_ag.universe.trajectory.n_frames,
+            indexes = np.linspace(0, batch_ag.universe.trajectory.n_frames * self.trajectory_stride,
+                                  batch_ag.universe.trajectory.n_frames,
                                   endpoint=False)
-            batch_time_ns = indexes * self.trajectory_stride * self.dt_ns
+            indexes += (indexes[-1] + self.trajectory_stride) * (batch_index)
+            batch_time_ns = indexes * self.dt_ns
 
             yield batch_ag, batch_time_ns
 
