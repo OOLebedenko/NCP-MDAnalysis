@@ -32,15 +32,15 @@ def atom_pair_selecetor(atom_name_1: str,
 
 
 def get_sec_str_pattern(reference: Universe,
-                        cnain_ids: Iterable[str]
+                        chain_ids: Iterable[str]
                         ) -> str:
     """
     :param reference: srtucture to assign secondary-structured elements
-    :param cnain_ids: list of chain names: ["A"] or ["A", "B"]
+    :param chain_ids: list of chain names: ["A"] or ["A", "B"]
     :return: string pattern for selection of atoms from secondary structured regions in specified chains
     """
     sec_str_patterns = []
-    for chain in cnain_ids:
+    for chain in chain_ids:
 
         dssp_results = dssp.DSSP(reference.select_atoms(f"chainID {chain}")).run().results
         ss_indexes = dssp_results.dssp_ndarray[0][:, 1:].sum(axis=1).astype(bool)
@@ -54,13 +54,13 @@ def get_sec_str_pattern(reference: Universe,
 
 
 def get_sec_str_ca_pattern(reference: Universe,
-                           cnain_ids: Iterable[str]
+                           chain_ids: Iterable[str]
                            ) -> str:
     """
     :param reference: srtucture to assign secondary-structured elements
-    :param cnain_ids: list of chain names: ["A"] or ["A", "B"]
+    :param chain_ids: list of chain names: ["A"] or ["A", "B"]
     :return: string pattern for selection of Ca atoms from secondary structured regions in specified chains
     """
     selection_sec_str = get_sec_str_pattern(reference=reference,
-                                            cnain_ids=cnain_ids)
+                                            chain_ids=chain_ids)
     return f"name CA and {selection_sec_str}"

@@ -36,7 +36,7 @@ if __name__ == '__main__':
     trj_reference = Universe(args.path_to_trajectory_reference, topology_format="PDB")
 
     # set selector to assemble structure that may appear divided at the boundaries due to periodic boundary condition
-    sec_str_ca = get_sec_str_ca_pattern(trj_reference, cnain_ids=args.protein_chains)
+    sec_str_ca = get_sec_str_ca_pattern(trj_reference, chain_ids=args.protein_chains)
     dna_pattern = f"(name N1 N9)"
     sec_str_ca_and_dna_pattern = f"({dna_pattern}) or ({sec_str_ca})"
 
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         # due to periodic boundary condition in the MD simulation.
         TransformWrapper(transform=AssembleQuaternaryStructure,
                          reference=trj_reference,
-                         cnain_ids=args.protein_chains + args.dna_chains,
+                         chain_ids=args.protein_chains + args.dna_chains,
                          atom_selector=sec_str_ca_and_dna_pattern),
         # 2. overlay all MD frames by superimposing them onto the reference
         # via the secondary-structure Cα atoms from the histone core.
