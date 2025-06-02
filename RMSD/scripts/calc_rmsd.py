@@ -36,7 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--trajectory-start', default=0, type=int)
     parser.add_argument('--trajectory-length', required=True, type=int)
     parser.add_argument('--trajectory-stride', default=100, type=int)
-    parser.add_argument('--batch-size', default=100, type=int)
+    parser.add_argument('--batch-size', default=1, type=int)
     parser.add_argument('--dt-ns', type=float, default=0.01)
     parser.add_argument('--output-directory', default=".")
     parser.add_argument('--dna-chains', default=["I", "J"], type=list)
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     # (3) N1 and N9 atoms from the outer turn of nDNA, nucleotides from -72 to -39 and from 39 to 72
     # (4) N1 and N9 atoms from nDNA nucleobases
     # (5) sets (1) and (4) combined
-    sec_str_ca = get_sec_str_ca_pattern(xray_reference, cnain_ids=args.protein_chains)
+    sec_str_ca = get_sec_str_ca_pattern(xray_reference, chain_ids=args.protein_chains)
 
     dna_inner_turn = " ".join(f'{i}' for i in range(-38, 38 + 1))
     dna_outer_turn = ' '.join(f'{i}' for i in chain(range(-72, -39 + 1), range(39, 72 + 1)))
@@ -76,7 +76,7 @@ if __name__ == '__main__':
         # due to periodic boundary condition in the MD simulation.
         TransformWrapper(transform=AssembleQuaternaryStructure,
                          reference=trj_reference,
-                         cnain_ids=args.protein_chains + args.dna_chains,
+                         chain_ids=args.protein_chains + args.dna_chains,
                          atom_selector=sec_str_ca_and_dna_pattern),
     ]
 

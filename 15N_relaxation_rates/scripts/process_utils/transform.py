@@ -55,7 +55,7 @@ class AssembleQuaternaryStructure(TransformationBase):
     def __init__(self,
                  ag,
                  reference,
-                 cnain_ids,
+                 chain_ids,
                  atom_selector,
                  max_threads=1,
                  parallelizable=True
@@ -70,7 +70,7 @@ class AssembleQuaternaryStructure(TransformationBase):
         self.atom_selector = atom_selector
 
         self.reference_mols = [
-            self.reference.select_atoms(f"chainID {chain_id}") for chain_id in cnain_ids
+            self.reference.select_atoms(f"chainID {chain_id}") for chain_id in chain_ids
         ]
 
         self._reference_mean_coords = [
@@ -79,7 +79,7 @@ class AssembleQuaternaryStructure(TransformationBase):
         ]
 
         self._mols = [
-            self.ag.select_atoms(f"chainID {chain_id}") for chain_id in cnain_ids
+            self.ag.select_atoms(f"chainID {chain_id}") for chain_id in chain_ids
         ]
 
     def _transform(self, ts):
