@@ -1,6 +1,7 @@
 import numpy as np
 
 from MDAnalysis.analysis import align
+from MDAnalysis.transformations import fit_rot_trans
 from MDAnalysis.transformations.base import TransformationBase
 
 
@@ -50,6 +51,8 @@ class Alignment:
 
 
 class AssembleQuaternaryStructure(TransformationBase):
+    """Assembles multichain structure that may appear divided at the boundaries
+    due to periodic boundary condition based on reference configuration"""
 
     def __init__(self,
                  ag,
@@ -68,43 +71,74 @@ class AssembleQuaternaryStructure(TransformationBase):
         self.reference = reference
         self.atom_selector = atom_selector
 
-        self.reference_mols = [
-            self.reference.select_atoms(f"chainID {chain_id}") for chain_id in chain_ids
-        ]
+        self.ref_mol_selection = []
+        self.mobile_mol_selection = []
+        self.reference_coms = []
 
-        self._reference_mean_coords = [
-            mol.atoms.select_atoms(atom_selector).center_of_mass()
-            for mol in self.reference_mols
-        ]
+        for chain_id in chain_ids:
+            ref_mol = reference.select_atoms(f"chainID {chain_id}")
+            ref_sel = ref_mol.select_atoms(atom_selector)
+            self.ref_mol_selection.append(ref_sel)
 
-        self._mols = [
-            self.ag.select_atoms(f"chainID {chain_id}") for chain_id in chain_ids
-        ]
+            mol = ag.select_atoms(f"chainID {chain_id}")
+            mobile_sel = mol.select_atoms(atom_selector)
+            self.mobile_mol_selection.append(mobile_sel)
+
+            self.reference_coms.append(ref_sel.center_of_mass())
+
+        self.reference_coms = np.array(self.reference_coms)
 
     def _transform(self, ts):
-        # first molecule in assembly is aligned by convention
-        alignment = Alignment(self.reference_mols[0].select_atoms(self.atom_selector),
-                              self._mols[0].select_atoms(self.atom_selector))
+        """Apply transformation to timestep"""
+        # 1. Align first chain to reference
+        alignment = Alignment(self.ref_mol_selection[0],
+                              self.mobile_mol_selection[0])
 
-        # calculate reference coordinates for current frame
-        ref_mean_coords = [np.dot(coords, alignment.matrix3d.T) + alignment.vector3d
-                           for coords in self._reference_mean_coords]
+        # 2. Transform reference coordinates using computed alignment
+        ref_mean_coords = self.reference_coms @ alignment.matrix3d.T + alignment.vector3d
+
+        # 3. Apply periodic correction to other chains
+        v1, v2, v3 = ts.triclinic_dimensions
+        g_ij = metric_tensor(v1, v2, v3)  # Compute metric tensor once per frame
+        g_inv = np.linalg.inv(g_ij)  # Invert once per frame
 
         # shift rest of molecules to match reference coordinates as close as possible
-        for mol_n in range(1, len(ref_mean_coords)):
-            ref_point = ref_mean_coords[mol_n]
-            mol = self._mols[mol_n]
-            mol_point = self._mols[mol_n].select_atoms(self.atom_selector).center_of_mass()
-            v1, v2, v3 = ts.triclinic_dimensions
+        for mol_idx in range(1, len(self.mobile_mol_selection)):
 
-            # find the closest image
-            g_ij = metric_tensor(v1, v2, v3)
-            delta = ref_point - mol_point
+            # Current center of mass
+            current_com = self.mobile_mol_selection[mol_idx].center_of_mass()
 
-            approx = np.linalg.inv(g_ij) @ np.array([delta.dot(v1), delta.dot(v2), delta.dot(v3)])
-            i, j, k = map(round, approx)
+            # Displacement vector
+            delta = ref_mean_coords[mol_idx] - current_com
 
-            if sum([i, j, k]):
-                shift = v1 * i + v2 * j + v3 * k
-                ts.positions[mol.ix] += shift
+            # Calculate periodic shifts
+            projections = np.array([delta.dot(v1), delta.dot(v2), delta.dot(v3)])
+            i, j, k = np.round(g_inv @ projections).astype(int)
+
+            # Apply shift if needed
+            if np.any((i, j, k)):
+                shift = i * v1 + j * v2 + k * v3
+                ts.positions[self.mobile_mol_selection[mol_idx].ix] += shift
+
         return ts
+
+
+class fit_rot_trans_by_pattern(fit_rot_trans):
+
+    def __init__(self, ag, reference, pattern='all', *args, **kwargs):
+        super().__init__(ag, reference, *args, **kwargs)
+
+        self.mobile_all_atoms_com = self.mobile.atoms.center(self.weights)
+
+        ag_ca = ag.select_atoms(pattern)
+        ref_ca = reference.select_atoms(pattern)
+        self.ref_com_all = self.ref.center(self.weights)
+
+        self.ref, self.mobile = align.get_matching_atoms(ref_ca.atoms,
+                                                         ag_ca.atoms)
+
+        self.weights = align.get_weights(self.ref.atoms,
+                                         weights=self.weights)
+
+        self.ref_com = self.ref.center(self.weights)
+        self.ref_coordinates = self.ref.atoms.positions - self.ref_com
