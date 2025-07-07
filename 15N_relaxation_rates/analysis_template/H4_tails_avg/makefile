@@ -1,0 +1,40 @@
+include common.mk
+
+all: data/relaxation_rate/R2.csv figure/tau_6_exp.pdf
+
+clean:
+	rm -rf data
+	rm -rf figure
+
+data/relaxation_rate/R2.csv: $(strip ${SCRIPT_DIR})/calc_relaxation_rates.py data/fit/tau_6_exp.csv
+	python "$<" \
+	    --path-to-fit-dir=data/fit \
+	    --output-directory=data/relaxation_rate \
+	    --nmr-freq="$(strip ${NMR_FREQ})"
+
+
+figure/tau_6_exp.pdf: $(strip ${SCRIPT_DIR})/plot_autocorrelation_function_with_fit.py data/fit/tau_6_exp.csv
+	mkdir -p figure/
+	python "$<" \
+	    --path-to-acorr-csv=data/acorr \
+	    --path-to-fit-csv=data/fit/ \
+	    --path-to-reference-pdb="$(strip ${REFERENCE_PDB_PATH})" \
+	    --output-directory=figure/ \
+
+
+data/fit/tau_6_exp.csv: $(strip ${SCRIPT_DIR})/fit_autocorrelation_function.py data/acorr/*.csv
+	python "$<" \
+		--path-to-acorr-csv=data/acorr \
+		--path-to-reference-pdb="$(strip ${REFERENCE_PDB_PATH})" \
+		--chain-name="$(strip ${CHAIN_NAME})" \
+		--n-lag-points="$(strip ${N_LAG_POINTS})" \
+		--tumbling-time-ns="$(strip ${TUMBLING_TIME})" \
+		--output-directory=data/fit \
+		--limit_ns="$(strip ${FIT_LIMIT_NS})" \
+        --lag-spacing="$(strip ${LAG_SPACING})"
+
+
+data/acorr/*.csv: $(strip ${SCRIPT_DIR})/average_autocorrelation_function.py
+	python3 "$<" \
+	    --path-to-processing-dirs="$(strip ${PATH_TO_PROCESSING_DIRS})" \
+ 		--output-directory=data/acorr
