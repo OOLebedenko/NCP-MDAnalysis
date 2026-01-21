@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
     # set loader for trajectory to batch processing due to file open limits
     batchloader = BatchLoader(reference=trj_reference,
-                              trj_list=nc_files[:1],  # [args.trajectory_start:args.trajectory_length],
+                              trj_list=nc_files[args.trajectory_start:args.trajectory_length],
                               trajectory_stride=args.trajectory_stride,
                               batch_size=args.batch_size,
                               dt_ns=args.dt_ns,
