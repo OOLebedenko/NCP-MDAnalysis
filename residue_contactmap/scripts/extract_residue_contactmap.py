@@ -21,8 +21,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Extract NH vectors')
     parser.add_argument('--path-to-trajectory', required=True)
     parser.add_argument('--path-to-trajectory-reference', required=True)
-    parser.add_argument('--chain-name-dna', required=True, type=str)
-    parser.add_argument('--chain-name-histone', required=True, type=str)
+    parser.add_argument('--histone-chains', required=True, type=str)
     parser.add_argument('--residue-of-interest-histone', required=True)
     parser.add_argument('--trajectory-start', default=0, type=int)
     parser.add_argument('--trajectory-length', required=True, type=int)
@@ -65,13 +64,13 @@ if __name__ == '__main__':
                               transforms=transforms,
                               )
 
-    # set trajectory analyzer to extract coordinates of NH vectors
-    # pattern_dna = f"chainID {args.chain_name_dna} and not (name H*)"
-    pattern_dna = f"chainID {args.chain_name_dna} and not (name H*)"
+    # set trajectory analyzer to extract residue contact maps
+    pattern_dna = f"chainID {' '.join(args.dna_chains)} and not (name H*)"
 
     first_rid, last_rid = args.residue_of_interest_histone.split("-")
     resids_of_interest = set(list(range(int(first_rid), int(last_rid) + 1)))
-    pattern_h4_tail = f"chainID {args.chain_name_histone} and resid {' '.join(list(map(str, resids_of_interest)))} and not (name H*)"
+    pattern_h4_tail = f"chainID {args.histone_chains.replace(',', ' ')} " \
+                      f" and resid {' '.join(list(map(str, resids_of_interest)))} and not (name H*)"
 
     analyzer = AnalyzerWrapper(ResidueBinaryContactMapper,
                                selector_partner_1=by_pattern_selector(pattern_h4_tail),

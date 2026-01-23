@@ -43,6 +43,10 @@ class ResidueBinaryContactMapper(AnalysisBase):
         self.residuename_provider = residuename_provider
 
     def _prepare(self):
+        self.residue_to_index = {}
+        for ind, residue in enumerate(self.partner_2.residues):
+            self.residue_to_index[self.residuename_provider(residue)] = ind
+
         for residue_partner_1 in self.partner_1.residues:
             key = self.residuename_provider(residue_partner_1)
             self.results[key] = np.zeros((self.n_frames, self.partner_2.n_residues + 2))
@@ -62,4 +66,5 @@ class ResidueBinaryContactMapper(AnalysisBase):
 
         for residue_partner_1, residue_partner_2 in residue_pairs:
             key = self.residuename_provider(residue_partner_1)
-            self.results[key][self._frame_index, 2:][residue_partner_2.resindex - self.partner_2[0].resindex] = 1
+            index = self.residue_to_index[self.residuename_provider(residue_partner_2)]
+            self.results[key][self._frame_index, 2:][index] = 1
