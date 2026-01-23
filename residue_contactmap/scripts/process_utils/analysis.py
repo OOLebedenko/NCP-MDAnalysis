@@ -62,4 +62,4 @@ class ResidueBinaryContactMapper(AnalysisBase):
 
         for residue_partner_1, residue_partner_2 in residue_pairs:
             key = self.residuename_provider(residue_partner_1)
-            self.results[key][self._frame_index, 2:][residue_partner_2.resnum] = 1
+            self.results[key][self._frame_index, 2:][residue_partner_2.resindex - self.partner_2[0].resindex] = 1
