@@ -14,7 +14,7 @@ from process_utils.batch_process import BatchLoader, BatchCsvWriter, BatchAnalyz
 
 
 def residuename_provider(residue: Residue):
-    return f"{residue.segid}_{residue.resnum:02d}_{residue.resname}"
+    return f"{residue.segid}_{residue.resnum:03d}_{residue.resname}"
 
 
 if __name__ == '__main__':
@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
     # set writer to save the coordinates of NH vectors
     writer = BatchCsvWriter(output_directory=args.output_directory,
-                            header=["time_ns", *[f"{residue.segid}{residue.resnum:03d}-{residue.resname}"
+                            header=["time_ns", *[residuename_provider(residue)
                                                  for residue in trj_reference.select_atoms(pattern_dna).residues]]
                             )
 
