@@ -118,8 +118,7 @@ class AssembleQuaternaryStructure(TransformationBase):
             # Apply shift if needed
             if np.any((i, j, k)):
                 shift = i * v1 + j * v2 + k * v3
-                ts.positions[self.mobile_mol_selection[mol_idx].ix] += shift
-
+                ts.positions[self.mobile_mol_selection[mol_idx][0].segment.atoms.ix] += shift
         return ts
 
 
